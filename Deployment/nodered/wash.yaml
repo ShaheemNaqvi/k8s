@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: washing
+  labels:
+    app: washing
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: washing
+  template:
+    metadata:
+      labels:
+        app: washing
+    spec:
+      containers:
+        - name: washing
+          image: shaheemnaqvi/ict-project:node3
+          ports:
+            - containerPort: 1880
+          volumeMounts:
+            - mountPath: /data
+              name: washing-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+      volumes:
+        - name: washing-storage
+          persistentVolumeClaim:
+            claimName: pvc-washing
+      # nodeSelector:
+      #   kubernetes.io/hostname: minikube
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: washing-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1880
+      protocol: TCP
+      targetPort: 1880
+      nodePort: 30021
+  selector:
+    app: washing
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-washing
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/home/user/k8s/volumes"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-washing
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
