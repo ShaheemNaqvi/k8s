@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: defoliator
+  labels:
+    app: defoliator
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: defoliator
+  template:
+    metadata:
+      labels:
+        app: defoliator
+    spec:
+      containers:
+        - name: defoliator
+          image: shaheemnaqvi/ict-project:node3
+          ports:
+            - containerPort: 1880
+          volumeMounts:
+            - mountPath: /data
+              name: defoliator-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+      volumes:
+        - name: defoliator-storage
+          persistentVolumeClaim:
+            claimName: pvc-defoliator
+      # nodeSelector:
+      #   kubernetes.io/hostname: minikube
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: defoliator-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1880
+      protocol: TCP
+      targetPort: 1880
+      nodePort: 30020
+  selector:
+    app: defoliator
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-defoliator
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/home/user/k8s/volumes"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-defoliator
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
