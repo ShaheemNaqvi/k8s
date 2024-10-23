@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crushing
+  labels:
+    app: crushing
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crushing
+  template:
+    metadata:
+      labels:
+        app: crushing
+    spec:
+      containers:
+        - name: crushing
+          image: shaheemnaqvi/ict-project:node3
+          ports:
+            - containerPort: 1880
+          volumeMounts:
+            - mountPath: /data
+              name: crushing-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+      volumes:
+        - name: crushing-storage
+          persistentVolumeClaim:
+            claimName: pvc-crushing
+      # nodeSelector:
+      #   kubernetes.io/hostname: minikube
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crushing-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1880
+      protocol: TCP
+      targetPort: 1880
+      nodePort: 30022
+  selector:
+    app: crushing
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-crushing
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/home/user/k8s/volumes"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-crushing
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
