@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: crushing
+  labels:
+    app: crushing
+  namespace: default
+spec:
+  serviceName: crushing-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crushing
+  template:
+    metadata:
+      labels:
+        app: crushing
+    spec:
+      containers:
+        - name: crushing
+          image: shaheemnaqvi/ict-project:node3
+          ports:
+            - containerPort: 1880
+          volumeMounts:
+            - mountPath: /data
+              name: pvc-crushing
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: pvc-crushing
+      spec:
+        storageClassName: manual
+        accessModes: ["ReadWriteOnce"] 
+        resources:
+          requests:
+            storage: 100Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crushing-headless
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: crushing
+  ports:
+    - name: http
+      port: 1880
+      protocol: TCP
+      targetPort: 1880
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crushing-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1880
+      protocol: TCP
+      targetPort: 1880
+      nodePort: 30022  # Changed to avoid conflict with the previous service
+  selector:
+    app: crushing
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-crushing
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/home/user/mini/crush"
+#crushing-0.crushing-headless.default.svc.cluster.local
+#nodesub-0.nodesub-headless.default.svc.cluster.local

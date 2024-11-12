@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodesub
+  labels:
+    app: nodesub
+  namespace: default
+spec:
+  #serviceName: nodesub-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodesub
+  template:
+    metadata:
+      labels:
+        app: nodesub
+    spec:
+      containers:
+        - name: nodesub
+          image: shaheemnaqvi/ict-project:node1
+          ports:
+            - containerPort: 1880
+          volumeMounts:
+            - mountPath: /data
+              name: nodered-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+      volumes:
+        - name: nodered-storage
+          persistentVolumeClaim:
+            claimName: nodered-storage
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: nodesub-headless
+#   namespace: default
+# spec:
+#   clusterIP: None
+#   selector:
+#     app: nodesub
+#   ports:
+#     - name: http
+#       port: 1880
+#       protocol: TCP
+#       targetPort: 1880
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodesub-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1880
+      protocol: TCP
+      targetPort: 1880
+      nodePort: 30023  
+  selector:
+    app: nodesub
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-nodesub
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/home/user/mini/sub"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nodered-storage
+spec:
+  storageClassName: manual
+  accessModes: ["ReadWriteOnce"] 
+  resources:
+    requests:
+      storage: 100Mi

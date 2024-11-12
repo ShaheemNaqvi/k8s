@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+  namespace: default
+spec:
+  serviceName: influxdb-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+        - name: influxdb
+          image: influxdb:2.7
+          ports:
+            - containerPort: 8086  
+          volumeMounts:
+            - mountPath: /var/lib/influxdb2
+              name: influxdb-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: influxdb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-storage
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: influxdb-pv
+spec:
+  storageClassName: local-storage
+  volumeMode: Filesystem
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/home/user/mini/influx" 
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-headless
+  namespace: default
+spec:
+  clusterIP: None
+  ports:
+    - port: 8086
+      protocol: TCP
+      targetPort: 8086
+  selector:
+    app: influxdb
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8086
+      protocol: TCP
+      targetPort: 8086
+      nodePort: 30025  
+  selector:
+    app: influxdb
+#influxdb-0.influxdb-headless.default.svc.cluster.local

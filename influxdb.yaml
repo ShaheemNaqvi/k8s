@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+        - name: influxdb
+          image: influxdb:2.7
+          ports:
+            - containerPort: 8086  # Default HTTP API port for InfluxDB
+          volumeMounts:
+            - mountPath: /var/lib/influxdb2
+              name: influxdb-storage
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"
+      volumes:
+        - name: influxdb-storage
+          persistentVolumeClaim:
+            claimName: influxdb-storage
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: influxdb-storage
+spec:
+  storageClassName: local-storage
+  volumeMode: Filesystem
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/home/user/k8s/volumes"  # Adjust this path as needed
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influxdb-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-storage
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-service
+  namespace: default
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"influxdb-service","namespace":"default"},"spec":{"ports":[{"port":8086,"protocol":"TCP","targetPort":8086}],"selector":{"app":"influxdb"},"type":"LoadBalancer"}}
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8086
+      protocol: TCP
+      targetPort: 8086
+      nodePort: 30007  # Adjust as needed within the range 30000-32767
+  selector:
+    app: influxdb
