@@ -16,6 +16,9 @@ spec:
       labels:
         app: defoliator
     spec:
+      #nodeSelector:
+       #  node-type: allpods
+      nodeName: minikube-m02
       containers:
         - name: defoliator
           image: shaheemnaqvi/ict-project:node3
@@ -84,6 +87,6 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/home/user/mini/defoliator"
+    path: "/home/mini/defoliator"
 
 #defoliator-0.defoliator-headless.default.svc.cluster.local
