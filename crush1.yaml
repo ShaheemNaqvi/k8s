@@ -16,6 +16,9 @@ spec:
       labels:
         app: crushing
     spec:
+      # nodeSelector:
+      #   node-type: allpods
+      nodeName: minikube-m02
       containers:
         - name: crushing
           image: shaheemnaqvi/ict-project:node3
@@ -85,6 +88,6 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/home/user/mini/crush"
+    path: "/home/mini/crush"
 #crushing-0.crushing-headless.default.svc.cluster.local
 #nodesub-0.nodesub-headless.default.svc.cluster.local
